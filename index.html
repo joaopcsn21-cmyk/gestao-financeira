@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Gestão financeira</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#EEF2E7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#10140F" media="(prefers-color-scheme: dark)">
+
+  <!-- C6 (ORD-004 v2): o icone na aba e a instalacao como app. A versao PLANA vai para o favicon
+       (ela cresce no 16 px); a 3D vai para a tela de inicio e para a barra de tarefas. -->
+  <link rel="icon" href="icones/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="icones/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icones/favicon-16.png">
+  <link rel="apple-touch-icon" href="icones/icone-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Finanças">
+  <!--
+    WRAPPER ANTI /u/N/ — por que este arquivo existe
+    -------------------------------------------------
+    O web app do Apps Script e servido em script.google.com/macros/s/.../exec.
+    Com 2+ contas Google logadas, o Google reescreve a /exec para /u/0/, /u/1/...
+    chuta o indice errado e mostra "Nao foi possivel abrir o arquivo". Carregando a
+    MESMA /exec dentro de um <iframe credentialless> a partir de um dominio que NAO
+    e google.com, o app abre igual em qualquer navegador.
+
+    Mesmo padrao do Meu Casamento (#12), Minha Carteira (#18) e Hub Alicerce (#14).
+
+    PRE-REQUISITOS, e os dois tem de valer:
+      1. Implantacao com "Executar como: Eu" + "Quem pode acessar: Qualquer pessoa"
+         (`apps-script/appsscript.json`, `webapp.access: ANYONE_ANONYMOUS`).
+      2. `doGet()` com `setXFrameOptionsMode(ALLOWALL)` — chega na Fatia 1.
+
+    O QUE ISTO NAO E: nao e seguranca. Quem barra e o PIN, dentro do app.
+
+    O LINK DO CELULAR APONTA PARA CA, E NAO PARA A /exec: o dia em que o deployment
+    for recriado, a /exec muda. Trocando o endereco aqui (nos DOIS lugares: src do
+    iframe e href do aviso), o link salvo continua o mesmo.
+
+    SAFE AREA (licao do Hub, ORD-HUB-MOBILE-001 §4): dentro de um iframe,
+    env(safe-area-inset-*) vale ZERO — quem tem a informacao e esta pagina. A altura
+    do #app e CALCULADA, nao inset/bottom: <iframe> e elemento SUBSTITUIDO e, com
+    height:auto, o navegador usa a altura intrinseca (150 px) e descarta o bottom.
+    A faixa que sobra fica com a cor do canvas Cedula do tema do APARELHO.
+  -->
+  <style>
+    :root { color-scheme: light dark; --canvas: #EEF2E7; --ink: #3C4733; --link: #4C6533; }
+    @media (prefers-color-scheme: dark) { :root { --canvas: #10140F; --ink: #B4C1B0; --link: #9BCD3A; } }
+    html, body { margin: 0; height: 100%; background: var(--canvas); }
+    #app { position: fixed; inset: 0; width: 100%; height: calc(100% - env(safe-area-inset-bottom)); border: 0; display: block; }
+    .aviso {
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center; padding: 24px;
+      font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--ink); text-align: center;
+    }
+    .aviso a { color: var(--link); font-weight: 600; }
+    .carregando {
+      position: fixed; inset: 0; display: flex;
+      align-items: center; justify-content: center;
+      font: 16px ui-sans-serif, system-ui, sans-serif; color: var(--ink);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="carregando" id="carregando">Abrindo a Gestão financeira…</div>
+
+  <!--
+    credentialless: carrega o iframe num contexto efemero, SEM os cookies de sessao
+    do Google (como uma aba anonima) — e e isso que contorna o roteador /u/N/.
+    Chromium (Chrome/Edge 110+). Firefox e Safari ignoram o atributo; para eles o
+    aviso abaixo oferece o link direto depois de 12s.
+  -->
+  <iframe
+    id="app"
+    credentialless
+    src="https://script.google.com/macros/s/AKfycbxrYucSzWrYUA-Qp6NeIRR0ISrS1XUlZaZNy4LGESfFhxK0fR2XPQKESY_SCoqf2RZAJA/exec"
+    title="Gestão financeira"
+    allow="clipboard-write; fullscreen"
+    referrerpolicy="no-referrer"
+    onload="document.getElementById('carregando').style.display='none'"></iframe>
+
+  <div class="aviso" id="aviso">
+    <div>
+      <p><strong>O app não abriu por aqui.</strong></p>
+      <p>Abra direto neste link:<br>
+        <a href="https://script.google.com/macros/s/AKfycbxrYucSzWrYUA-Qp6NeIRR0ISrS1XUlZaZNy4LGESfFhxK0fR2XPQKESY_SCoqf2RZAJA/exec"
+           target="_blank" rel="noopener">abrir a Gestão financeira</a>
+      </p>
+      <p style="font-size:14px">Se pedir para escolher uma conta do Google, escolha a sua — a mesma de sempre.</p>
+    </div>
+  </div>
+
+  <script>
+    // O onload do <iframe> dispara igual numa pagina de erro do Google (Regra 30):
+    // o fallback de 12 s cobre so o caso em que nada carregou.
+    setTimeout(function () {
+      var ld = document.getElementById('carregando');
+      if (ld && ld.style.display !== 'none') {
+        ld.style.display = 'none';
+        document.getElementById('aviso').style.display = 'flex';
+      }
+    }, 12000);
+
+    // O service worker existe por UM motivo: sem ele o Chrome nao oferece "Instalar app".
+    // Ele nao guarda dado nenhum do app — veja o porque no proprio sw.js.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function () { /* sem HTTPS, sem SW: tudo bem */ });
+      });
+    }
+  </script>
+</body>
+</html>
