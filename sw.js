@@ -11,12 +11,13 @@
   tocada**. Sem o `return`, o service worker viraria um intermediário entre a pessoa e o servidor
   do app — exatamente o que ninguém quer entre alguém e a própria conta bancária.
 */
-var CACHE = 'financeiro-casca-v1';
+var CACHE = 'financeiro-casca-v2'; // v2: icone D2 (gema na rede), 29/09/2026
 var CASCA = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icones/favicon.ico',
+  './icones/favicon.svg',
   './icones/favicon-32.png',
   './icones/icone-180.png',
   './icones/icone-192.png',
